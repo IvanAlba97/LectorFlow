@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "LectorFlow",
+    "slug": "LectorFlow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logo_lectorflow.png",
+    "scheme": "lectorflow",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/book-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.ivanalba97.LectorFlow",
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/book-icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-dev-client"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "googleBooksApi": {
+        "androidKey": "AIzaSyDZRv7ifsgL0aTuCSHBcdzCiHIpoei7OcE",
+        "webKey": "AIzaSyDYbWFN5soRICkfrfLLysO706rA9KyTK4w"
+      },
+      "googleSignIn": {
+        "webClientId": "66446923656-tv59a8cpom826fpl1rgq69si0aob1r43.apps.googleusercontent.com",
+        "androidClientId": "66446923656-898i259e3leag2ghtp2o4sg6u770923t.apps.googleusercontent.com"
+      },
+      "router": {},
+      "eas": {
+        "projectId": "dde024a3-32d4-41cf-b852-81122588a28c"
+      }
+    },
+    "owner": "ivanalba97"
+  }
+}
