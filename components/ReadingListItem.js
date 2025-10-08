@@ -13,6 +13,23 @@ const AnimatedReadingListItem = ({
   handleOpenProgressModal,
   handleDeleteBook,
 }) => {
+  const progressText = () => {
+    if (item.progressType === 'percentage') {
+      return `Progreso: ${item.currentPage}%`;
+    } else {
+      const percentage = item.totalPages > 0 ? ((item.currentPage / item.totalPages) * 100).toFixed(0) : 0;
+      return `Progreso: ${item.currentPage} / ${item.totalPages} (${percentage}%)`;
+    }
+  };
+
+  const progressBarWidth = () => {
+    if (item.progressType === 'percentage') {
+      return `${item.currentPage}%`;
+    } else {
+      return item.totalPages > 0 ? `${(item.currentPage / item.totalPages) * 100}%` : '0%';
+    }
+  };
+
   return (
     <View>
       <TouchableOpacity onPress={() => handleBookPress(item.bookId)} style={styles.bookItem}>
@@ -28,16 +45,14 @@ const AnimatedReadingListItem = ({
           <Text style={styles.bookAuthor} numberOfLines={1} ellipsizeMode="tail">
             {item.author}
           </Text>
-          {listName === 'Leyendo' && item.currentPage !== null && item.totalPages !== null && (
+          {listName === 'Leyendo' && item.currentPage !== null && (
             <>
-              <Text style={styles.progressText}>
-                Progreso: {item.currentPage} / {item.totalPages} ({(item.totalPages > 0 ? ((item.currentPage / item.totalPages) * 100) : 0).toFixed(0)}%)
-              </Text>
+              <Text style={styles.progressText}>{progressText()}</Text>
               <View style={styles.progressBarBackground}>
                 <View
                   style={[
                     styles.progressBarFill,
-                    { width: `${(item.currentPage / item.totalPages) * 100 || 0}%` },
+                    { width: progressBarWidth() },
                   ]}
                 />
               </View>
