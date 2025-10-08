@@ -4,12 +4,13 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { db, auth } from '../constants/firebaseConfig';
-import { addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
+import { addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import RenderHTML from 'react-native-render-html';
 import { COLORS, SIZES, FONTS, SHADOWS } from '../constants/theme';
 import Constants from 'expo-constants';
 import { Rating } from 'react-native-ratings';
+import { Calendar } from 'react-native-calendars';
 
 export default function DetailsScreen() {
   const { bookId } = useLocalSearchParams();
@@ -20,10 +21,14 @@ export default function DetailsScreen() {
   const { width } = useWindowDimensions();
 
   const [showAddToListModal, setShowAddToListModal] = useState(false);
-  const [showRatingModal, setShowRatingModal] = useState(false); // Nuevo estado para el modal de valoración
+  const [showRatingModal, setShowRatingModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showDateModal, setShowDateModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [bookInList, setBookInList] = useState(null);
+  const [newStartDate, setNewStartDate] = useState(null);
+  const [newFinishDate, setNewFinishDate] = useState(null);
+  const [dateTypeToSet, setDateTypeToSet] = useState('start');
 
   const apiKey = Platform.select({
     android: process.env.EXPO_PUBLIC_ANDROID_API_KEY,
@@ -72,7 +77,7 @@ export default function DetailsScreen() {
         const bookDoc = querySnapshot.docs[0];
         setBookInList({ id: bookDoc.id, ...bookDoc.data() });
       } else {
-        setBookInList(null); // Asegurarse de limpiar el estado si el libro no está en ninguna lista
+        setBookInList(null);
       }
     }
   }, [currentUser, bookDetails]);
@@ -89,6 +94,29 @@ export default function DetailsScreen() {
         setBookInList({ ...bookInList, rating });
       } catch (_error) {
         Alert.alert('Error', 'No se pudo guardar la valoración.');
+      }
+    }
+  };
+
+  const handleUpdateDates = async () => {
+    if (bookInList && (newStartDate || newFinishDate)) {
+      try {
+        const bookRef = doc(db, 'books', bookInList.id);
+        const updateData = {};
+        if (newStartDate) {
+          updateData.startDate = Timestamp.fromDate(new Date(newStartDate));
+        }
+        if (newFinishDate) {
+          updateData.finishDate = Timestamp.fromDate(new Date(newFinishDate));
+        }
+        await updateDoc(bookRef, updateData);
+        checkBookInList(); // Re-fetch book data
+        setShowDateModal(false);
+        setNewStartDate(null);
+        setNewFinishDate(null);
+      } catch (error) {
+        console.error("Error updating dates: ", error);
+        Alert.alert('Error', 'No se pudieron actualizar las fechas.');
       }
     }
   };
@@ -197,20 +225,32 @@ export default function DetailsScreen() {
     }
 
     try {
-      // Si el libro ya está en una lista, es una operación de mover/actualizar.
-      if (bookInList) {
+      const bookRef = bookInList ? doc(db, 'books', bookInList.id) : null;
+      const now = serverTimestamp();
+
+      if (bookRef) {
         if (bookInList.listName === newList) {
           Alert.alert('Información', `Este libro ya se encuentra en la lista "${newList}".`);
           setShowAddToListModal(false);
           return;
         }
-        const bookRef = doc(db, 'books', bookInList.id);
-        await updateDoc(bookRef, {
+
+        const updateData = {
           listName: newList,
-          dateAdded: serverTimestamp(),
-        });
+          lastDateRead: now,
+        };
+
+        if (newList === 'Leyendo' && !bookInList.startDate) {
+          updateData.startDate = now;
+        }
+
+        if (newList === 'Terminados') {
+          updateData.finishDate = now;
+        }
+
+        await updateDoc(bookRef, updateData);
+
       } else {
-        // Si el libro no está en ninguna lista, es una nueva adición.
         const bookData = {
           userId: currentUser.uid,
           listName: newList,
@@ -219,25 +259,30 @@ export default function DetailsScreen() {
           coverUrl: coverUrl ? coverUrl.replace('http://', 'https://') : null,
           description: description,
           bookId: bookDetails.id,
-          dateAdded: serverTimestamp(),
+          dateAdded: now,
+          lastDateRead: now,
           currentPage: newList === 'Leyendo' ? 0 : null,
-          totalPages: newList === 'Leyendo' ? (volumeInfo.pageCount || 0) : null,
+          totalPages: volumeInfo.pageCount || 0,
           categories: categories,
-          rating: 0, // Inicializar la valoración a 0
+          rating: 0,
         };
+
+        if (newList === 'Leyendo') {
+          bookData.startDate = now;
+        }
+        if (newList === 'Terminados') {
+          bookData.finishDate = now;
+        }
+
         await addDoc(collection(db, 'books'), bookData);
       }
 
-      // Actualizar el estado local del libro para reflejar el cambio
       await checkBookInList();
 
-      // Si la nueva lista es "Terminados", mostramos el modal de valoración
       if (newList === 'Terminados') {
         setShowAddToListModal(false);
         setShowRatingModal(true);
       } else {
-        // Para cualquier otra lista, mostramos éxito y volvemos atrás
-        // Alert.alert('Éxito', `Libro guardado en "${newList}" correctamente.`); // Mensaje de éxito eliminado
         setShowAddToListModal(false);
         router.back();
       }
@@ -245,6 +290,10 @@ export default function DetailsScreen() {
       console.error('Error al gestionar el libro:', error);
       Alert.alert('Error', 'No se pudo completar la operación.');
     }
+  };
+  const formatDate = (timestamp) => {
+    if (!timestamp) return 'N/A';
+    return timestamp.toDate().toLocaleDateString('es-ES');
   };
 
   return (
@@ -282,6 +331,13 @@ export default function DetailsScreen() {
               startingValue={bookInList.rating || 0}
               tintColor={COLORS.secondary}
             />
+            <View style={styles.dateContainer}>
+              <Text style={styles.dateText}>Inicio: {formatDate(bookInList.startDate)}</Text>
+              <Text style={styles.dateText}>Fin: {formatDate(bookInList.finishDate)}</Text>
+            </View>
+            <TouchableOpacity style={styles.editDatesButton} onPress={() => setShowDateModal(true)}>
+              <Text style={styles.editDatesButtonText}>Editar Fechas</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -339,7 +395,6 @@ export default function DetailsScreen() {
           </View>
         </Modal>
 
-        {/* Modal para la valoración */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -371,7 +426,6 @@ export default function DetailsScreen() {
           </View>
         </Modal>
 
-        {/* Modal para la imagen en pantalla completa */}
         <Modal
           animationType="fade"
           transparent={true}
@@ -382,6 +436,62 @@ export default function DetailsScreen() {
             {coverUrl && <Image source={{ uri: coverUrl.replace('http://', 'https://') }} style={styles.fullScreenImage} resizeMode="contain" />}
           </TouchableOpacity>
         </Modal>
+
+        <Modal
+            animationType="slide"
+            transparent={true}
+            visible={showDateModal}
+            onRequestClose={() => setShowDateModal(false)} >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <Text style={styles.modalTitle}>Editar Fechas</Text>
+                    <View style={styles.dateSelectionContainer}>
+                        <TouchableOpacity 
+                            style={[styles.dateSelectionButton, dateTypeToSet === 'start' && styles.dateSelectionButtonActive]}
+                            onPress={() => setDateTypeToSet('start')} >
+                            <Text style={styles.dateSelectionButtonText}>Inicio: {newStartDate ? new Date(newStartDate).toLocaleDateString('es-ES') : 'Seleccionar'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            style={[styles.dateSelectionButton, dateTypeToSet === 'finish' && styles.dateSelectionButtonActive]}
+                            onPress={() => setDateTypeToSet('finish')} >
+                            <Text style={styles.dateSelectionButtonText}>Fin: {newFinishDate ? new Date(newFinishDate).toLocaleDateString('es-ES') : 'Seleccionar'}</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <Calendar
+                        onDayPress={(day) => {
+                            if (dateTypeToSet === 'start') {
+                                setNewStartDate(day.dateString);
+                            } else {
+                                setNewFinishDate(day.dateString);
+                            }
+                        }}
+                        markedDates={{
+                            ...(newStartDate && { [newStartDate]: { selected: true, marked: true, selectedColor: COLORS.primary } }),
+                            ...(newFinishDate && { [newFinishDate]: { selected: true, marked: true, selectedColor: COLORS.primary } }),
+                        }}
+                        theme={{
+                            backgroundColor: COLORS.white,
+                            calendarBackground: COLORS.white,
+                            textSectionTitleColor: COLORS.text,
+                            selectedDayBackgroundColor: COLORS.primary,
+                            selectedDayTextColor: '#ffffff',
+                            todayTextColor: COLORS.primary,
+                            dayTextColor: COLORS.text,
+                            textDisabledColor: COLORS.lightText,
+                            arrowColor: COLORS.primary,
+                            monthTextColor: COLORS.text,
+                        }}
+                    />
+                    <TouchableOpacity style={styles.modalOptionButton} onPress={handleUpdateDates}>
+                        <Text style={styles.modalOptionButtonText}>Guardar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalOptionButton, styles.modalCancelButton]} onPress={() => setShowDateModal(false)}>
+                        <Text style={styles.modalCancelButtonText}>Cancelar</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+
       </ScrollView>
     </LinearGradient>
   );
@@ -390,7 +500,7 @@ export default function DetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     padding: SIZES.medium,
-    paddingBottom: SIZES.extraLarge * 2, // Add padding for the button
+    paddingBottom: SIZES.extraLarge * 2, 
   },
   centered: {
     flex: 1,
@@ -544,5 +654,45 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
     color: COLORS.text,
     marginBottom: SIZES.small,
+  },
+  dateContainer: {
+    marginTop: SIZES.medium,
+    alignItems: 'center',
+  },
+  dateText: {
+    fontSize: SIZES.font,
+    fontFamily: FONTS.regular,
+    color: COLORS.lightText,
+  },
+  editDatesButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SIZES.small,
+    paddingHorizontal: SIZES.medium,
+    borderRadius: SIZES.small,
+    marginTop: SIZES.medium,
+    alignItems: 'center',
+  },
+  editDatesButtonText: {
+    color: COLORS.white,
+    fontSize: SIZES.medium,
+    fontFamily: FONTS.regular,
+  },
+  dateSelectionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: SIZES.medium,
+  },
+  dateSelectionButton: {
+    padding: SIZES.small,
+    borderRadius: SIZES.small,
+    borderWidth: 1,
+    borderColor: COLORS.lightText,
+  },
+  dateSelectionButtonActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  dateSelectionButtonText: {
+    color: COLORS.text,
   },
 });
