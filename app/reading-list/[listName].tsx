@@ -142,11 +142,14 @@ export default function ReadingListScreen() {
       const updateData = {
         currentPage: finalCurrentPage,
         lastDateRead: serverTimestamp(),
-        readingActivity: arrayUnion({
+      };
+
+      if (pagesAdvanced > 0) {
+        updateData.readingActivity = arrayUnion({
           date: new Date(),
           pagesAdvanced: pagesAdvanced,
-        }),
-      };
+        });
+      }
 
       if (inputType === 'pages') {
         updateData.totalPages = finalTotalPages;
