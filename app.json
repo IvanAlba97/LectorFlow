@@ -30,7 +30,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-dev-client"
+      "expo-dev-client",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "gradleVersion": "8.0",
+            "agpVersion": "8.1.0"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

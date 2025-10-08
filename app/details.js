@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, ActivityIndicator, useWindowDimensions, Platform, Animated } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal, Alert, ActivityIndicator, useWindowDimensions, Platform, Animated } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { db, auth } from '../constants/firebaseConfig';
@@ -86,7 +87,6 @@ export default function DetailsScreen() {
         const bookRef = doc(db, 'books', bookInList.id);
         await updateDoc(bookRef, { rating });
         setBookInList({ ...bookInList, rating });
-        Alert.alert('Éxito', 'Valoración guardada correctamente.');
       } catch (_error) {
         Alert.alert('Error', 'No se pudo guardar la valoración.');
       }
@@ -216,7 +216,7 @@ export default function DetailsScreen() {
           listName: newList,
           title: volumeInfo.title || 'Sin título',
           author: volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Autor desconocido',
-          coverUrl: coverUrl,
+          coverUrl: coverUrl ? coverUrl.replace('http://', 'https://') : null,
           description: description,
           bookId: bookDetails.id,
           dateAdded: serverTimestamp(),
@@ -252,7 +252,7 @@ export default function DetailsScreen() {
         <ScrollView contentContainerStyle={styles.container}>
         {coverUrl && (
           <TouchableOpacity onPress={() => setShowImageModal(true)}>
-            <Image source={{ uri: coverUrl }} style={styles.coverImage} />
+            <Image source={{ uri: coverUrl.replace('http://', 'https://') }} style={styles.coverImage} />
           </TouchableOpacity>
         )}
         <Text style={styles.title}>{volumeInfo.title}</Text>
@@ -379,7 +379,7 @@ export default function DetailsScreen() {
           onRequestClose={() => setShowImageModal(false)}
         >
           <TouchableOpacity style={styles.fullScreenImageContainer} onPress={() => setShowImageModal(false)}>
-            {coverUrl && <Image source={{ uri: coverUrl }} style={styles.fullScreenImage} resizeMode="contain" />}
+            {coverUrl && <Image source={{ uri: coverUrl.replace('http://', 'https://') }} style={styles.fullScreenImage} resizeMode="contain" />}
           </TouchableOpacity>
         </Modal>
       </ScrollView>

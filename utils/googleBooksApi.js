@@ -37,7 +37,7 @@ export const fetchBookDetailsFromGoogleBooks = async (title, author, isbn) => {
         bookId: item.id,
         totalPages: volumeInfo.pageCount || 0,
         categories: volumeInfo.categories || [],
-        coverUrl: volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : null,
+        coverUrl: volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail.replace(/^http:/, 'https:') : null,
       };
     }
     return null;

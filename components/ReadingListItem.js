@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES, SHADOWS } from '../constants/theme';
@@ -16,7 +17,7 @@ const AnimatedReadingListItem = ({
     <View>
       <TouchableOpacity onPress={() => handleBookPress(item.bookId)} style={styles.bookItem}>
         {item.coverUrl ? (
-          <Image source={{ uri: item.coverUrl }} style={styles.bookCover} />
+          <Image source={{ uri: item.coverUrl.replace('http://', 'https://') }} style={styles.bookCover} />
         ) : (
           <Image source={require('../assets/images/icon.png')} style={styles.bookCover} />
         )}
