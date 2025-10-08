@@ -143,7 +143,7 @@ export default function ProfileScreen() {
               booksWithPages++;
             }
 
-            const finishedDate = book.lastDateRead?.toDate() || book.dateAdded?.toDate();
+            const finishedDate = book.finishDate?.toDate() || book.lastDateRead?.toDate() || book.dateAdded?.toDate();
             if (finishedDate) {
               const year = finishedDate.getFullYear();
               if (!yearlyBooks[year]) {
@@ -153,6 +153,15 @@ export default function ProfileScreen() {
             }
           }
         });
+
+        // Sort books within each year by finish date
+        for (const year in yearlyBooks) {
+          yearlyBooks[year].sort((a, b) => {
+            const dateA = a.finishDate?.toDate() || a.lastDateRead?.toDate() || a.dateAdded?.toDate();
+            const dateB = b.finishDate?.toDate() || b.lastDateRead?.toDate() || b.dateAdded?.toDate();
+            return dateB - dateA; // Sort descending (most recent first)
+          });
+        }
 
         setBooksByYear(yearlyBooks);
 
