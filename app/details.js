@@ -648,6 +648,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondary,
     borderRadius: SIZES.medium,
     ...SHADOWS.light,
+    marginBottom: SIZES.medium,
   },
   ratingTitle: {
     fontSize: SIZES.large,

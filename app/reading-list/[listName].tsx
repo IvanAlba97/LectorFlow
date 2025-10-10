@@ -237,7 +237,7 @@ export default function ReadingListScreen() {
               );
             }
           }}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={viewMode === 'list' ? { paddingHorizontal: SIZES.medium } : {}}
         />
       ) : (
         <View style={styles.centered}>
@@ -328,7 +328,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: SIZES.medium,
   },
-  listContent: {},
   emptyListText: {
     fontSize: SIZES.medium,
     fontFamily: FONTS.regular,
