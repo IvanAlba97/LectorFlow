@@ -13,21 +13,19 @@ const AnimatedReadingGridItem = ({
 }) => {
 
   return (
-    <View>
-      <TouchableOpacity onPress={() => handleBookPress(item.bookId)} style={[styles.gridBookItem, { width: itemWidth, height: itemWidth * 1.5 }]}>
-        {item.coverUrl ? (
-          <Image source={{ uri: item.coverUrl.replace('http://', 'https://') }} style={styles.gridBookCover} />
-        ) : (
-          <Image source={require('../assets/images/icon.png')} style={styles.gridBookCover} />
-        )}
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity onPress={() => handleBookPress(item.bookId)} style={[styles.gridBookItem, { width: itemWidth, height: itemWidth * 1.5 }]}>
+      {item.coverUrl ? (
+        <Image source={{ uri: item.coverUrl.replace('http://', 'https://') }} style={styles.gridBookCover} />
+      ) : (
+        <Image source={require('../assets/images/icon.png')} style={styles.gridBookCover} />
+      )}
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   gridBookItem: {
-    marginHorizontal: SIZES.medium / 2, // Increased horizontal separation
+    marginHorizontal: SIZES.medium / 2,
     marginBottom: SIZES.medium,
     borderRadius: SIZES.small / 2,
     overflow: 'hidden',

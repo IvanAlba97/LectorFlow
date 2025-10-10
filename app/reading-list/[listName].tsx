@@ -1,15 +1,18 @@
-import { useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useFocusEffect, useRouter, Stack } from 'expo-router';
 import { collection, query, where, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp, addDoc, arrayUnion } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert, Modal, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert, Modal, TextInput, TouchableOpacity, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { auth, db } from '../../constants/firebaseConfig';
 import { COLORS, SIZES, FONTS } from '../../constants/theme';
 import ReadingListItem from '../../components/ReadingListItem';
+import ReadingGridItem from '../../components/ReadingGridItem';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function ReadingListScreen() {
   const { listName } = useLocalSearchParams();
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +21,19 @@ export default function ReadingListScreen() {
   const [newProgress, setNewProgress] = useState('');
   const [newTotalPages, setNewTotalPages] = useState('');
   const [inputType, setInputType] = useState('pages'); // 'pages' or 'percentage'
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
+
+  const [screenWidth, setScreenWidth] = useState(Dimensions.get('window').width);
+  const numColumns = screenWidth < 768 ? 3 : 4;
+  const itemWidth = (screenWidth - (SIZES.medium * (numColumns + 1))) / numColumns;
+
+  useEffect(() => {
+    const onChange = ({ window }) => {
+      setScreenWidth(window.width);
+    };
+    const subscription = Dimensions.addEventListener('change', onChange);
+    return () => subscription.remove();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -106,6 +122,10 @@ export default function ReadingListScreen() {
     setProgressModalVisible(true);
   };
 
+  const handleBookPress = (bookId) => {
+    router.push({ pathname: 'details', params: { bookId } });
+  };
+
   const handleUpdateProgress = async () => {
     if (!selectedBook || newProgress === '') return;
 
@@ -177,21 +197,45 @@ export default function ReadingListScreen() {
 
   return (
     <LinearGradient colors={[COLORS.background, COLORS.secondary]} style={styles.container}>
+        <Stack.Screen
+            options={{
+                headerRight: () => (
+                    <TouchableOpacity onPress={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')} style={{ marginRight: 15 }}>
+                        <MaterialCommunityIcons name={viewMode === 'list' ? 'view-grid' : 'view-list'} size={24} color={COLORS.text} />
+                    </TouchableOpacity>
+                ),
+            }}
+        />
       <Text style={styles.listTitle}>{listName}</Text>
       {books.length > 0 ? (
         <FlatList
           data={books}
+          key={`${viewMode}-${numColumns}`}
           keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <ReadingListItem
-              item={item}
-              index={index}
-              listName={listName}
-              handleBookPress={() => {}} // Placeholder, as navigation is handled by the item itself
-              handleOpenProgressModal={handleOpenProgressModal}
-              handleDeleteBook={handleDeleteBook}
-            />
-          )}
+          numColumns={viewMode === 'grid' ? numColumns : 1}
+          renderItem={({ item, index }) => {
+            if (viewMode === 'list') {
+              return (
+                <ReadingListItem
+                  item={item}
+                  index={index}
+                  listName={listName}
+                  handleBookPress={handleBookPress}
+                  handleOpenProgressModal={handleOpenProgressModal}
+                  handleDeleteBook={handleDeleteBook}
+                />
+              );
+            } else {
+              return (
+                <ReadingGridItem
+                  item={item}
+                  index={index}
+                  handleBookPress={handleBookPress}
+                  itemWidth={itemWidth}
+                />
+              );
+            }
+          }}
           contentContainerStyle={styles.listContent}
         />
       ) : (
@@ -214,12 +258,12 @@ export default function ReadingListScreen() {
               <TouchableOpacity 
                 style={[styles.inputTypeButton, inputType === 'pages' && styles.inputTypeButtonActive]}
                 onPress={() => setInputType('pages')}>
-                  <Text style={styles.inputTypeButtonText}>Páginas</Text>
+                  <Text style={[styles.inputTypeButtonText, inputType === 'pages' && styles.inputTypeButtonTextActive]}>Páginas</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.inputTypeButton, inputType === 'percentage' && styles.inputTypeButtonActive]}
                 onPress={() => setInputType('percentage')}>
-                  <Text style={styles.inputTypeButtonText}>Porcentaje</Text>
+                  <Text style={[styles.inputTypeButtonText, inputType === 'percentage' && styles.inputTypeButtonTextActive]}>Porcentaje</Text>
               </TouchableOpacity>
             </View>
             
@@ -341,6 +385,7 @@ const styles = StyleSheet.create({
     borderRadius: SIZES.small,
     borderWidth: 1,
     borderColor: COLORS.lightText,
+    marginHorizontal: SIZES.small, // Añadido para dar separación
   },
   inputTypeButtonActive: {
     backgroundColor: COLORS.primary,
@@ -349,5 +394,8 @@ const styles = StyleSheet.create({
   inputTypeButtonText: {
     color: COLORS.text,
     fontFamily: FONTS.regular,
+  },
+  inputTypeButtonTextActive: {
+    color: COLORS.white,
   },
 })
