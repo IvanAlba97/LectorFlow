@@ -25,7 +25,6 @@ const AnimatedReadingGridItem = ({
 
 const styles = StyleSheet.create({
   gridBookItem: {
-    marginHorizontal: SIZES.medium / 2,
     marginBottom: SIZES.medium,
     borderRadius: SIZES.small / 2,
     overflow: 'hidden',

@@ -213,6 +213,7 @@ export default function ReadingListScreen() {
           key={`${viewMode}-${numColumns}`}
           keyExtractor={(item) => item.id}
           numColumns={viewMode === 'grid' ? numColumns : 1}
+          columnWrapperStyle={viewMode === 'grid' ? { justifyContent: 'space-around' } : null}
           renderItem={({ item, index }) => {
             if (viewMode === 'list') {
               return (
@@ -327,9 +328,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: SIZES.medium,
   },
-  listContent: {
-    paddingHorizontal: SIZES.medium,
-  },
+  listContent: {},
   emptyListText: {
     fontSize: SIZES.medium,
     fontFamily: FONTS.regular,
