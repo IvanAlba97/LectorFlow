@@ -265,6 +265,8 @@ export default function DetailsScreen() {
           totalPages: volumeInfo.pageCount || 0,
           categories: categories,
           rating: 0,
+          startDate: null,
+          finishDate: null,
         };
 
         if (newList === 'Leyendo') {
@@ -449,12 +451,12 @@ export default function DetailsScreen() {
                         <TouchableOpacity 
                             style={[styles.dateSelectionButton, dateTypeToSet === 'start' && styles.dateSelectionButtonActive]}
                             onPress={() => setDateTypeToSet('start')} >
-                            <Text style={styles.dateSelectionButtonText}>Inicio: {newStartDate ? new Date(newStartDate).toLocaleDateString('es-ES') : 'Seleccionar'}</Text>
+                            <Text style={[styles.dateSelectionButtonText, dateTypeToSet === 'start' && { color: COLORS.white }]}>Inicio: {newStartDate ? new Date(newStartDate).toLocaleDateString('es-ES') : 'Seleccionar'}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity 
                             style={[styles.dateSelectionButton, dateTypeToSet === 'finish' && styles.dateSelectionButtonActive]}
                             onPress={() => setDateTypeToSet('finish')} >
-                            <Text style={styles.dateSelectionButtonText}>Fin: {newFinishDate ? new Date(newFinishDate).toLocaleDateString('es-ES') : 'Seleccionar'}</Text>
+                            <Text style={[styles.dateSelectionButtonText, dateTypeToSet === 'finish' && { color: COLORS.white }]}>Fin: {newFinishDate ? new Date(newFinishDate).toLocaleDateString('es-ES') : 'Seleccionar'}</Text>
                         </TouchableOpacity>
                     </View>
                     <Calendar
